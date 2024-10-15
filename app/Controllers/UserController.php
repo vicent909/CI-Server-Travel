@@ -5,6 +5,9 @@ namespace App\Controllers;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
 use App\Models\UserModel;
+use App\Models\UserProfileModel;
+use Config\Services;
+use PSpell\Config;
 
 class UserController extends ResourceController
 {
@@ -52,7 +55,7 @@ class UserController extends ResourceController
 
         if ($json) {
             // check email and password
-            if(!$json['email'] || !$json['password'] ){
+            if (!$json['email'] || !$json['password']) {
                 return $this->respond(['message' => 'Email and password is required!'], 400);
             };
 
@@ -81,7 +84,55 @@ class UserController extends ResourceController
         }
     }
 
-    public function addUsrProfile(){
-        
+    public function addUserProfile()
+    {
+        $json = $this->request->getJSON(true);
+        $userModel = new UserModel();
+        $profile_model = new UserProfileModel();
+        $validation = \Config\Services::validation();
+
+        $req_data = $this->request->user_data ?? null;
+
+        if ($json) {
+            //validate 
+            $rules = [
+                'name' => 'required',
+                'phone' => 'required',
+                'address' => 'required'
+            ];
+
+            $validation->setRules($rules);
+
+            if (!$validation->run((array)$json)) {
+                return $this->fail($validation->getErrors(), 400);
+            }
+
+            // get user
+            $user = $userModel->where('email', $req_data['email'])->first();
+            
+            if (!$user) {
+                return $this->respond(['message' => 'User not found'], 404);
+            }
+            
+            //validate is profile already exists
+            $is_exists = $profile_model->where('user_id', $user['id']);
+            
+            if($is_exists){
+                return $this->respond(['message' => 'user profile already exists'], 400);
+            }
+
+            //set user id
+            $json['user_id'] = $user['id'];
+
+            $user_profile = $profile_model->insert($json);
+
+            if (!$user_profile) {
+                return $this->respond(['message' => 'failed insert user profile'], 404);
+            }
+
+            return $this->respond(['message' => 'success add profile'], 201);
+        } else {
+            return $this->respond(['message' => 'Invalid JSON format'], 500);
+        }
     }
 }

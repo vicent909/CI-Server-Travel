@@ -45,6 +45,8 @@ class AuthFilter implements FilterInterface
             return response()->setStatusCode(401)->setJSON(['message' => 'Invalid JWT token']);
         }
 
+        $request->user_data = (array) $validateToken['data'];
+        
         return;
         // return response()->setJSON($validateToken);
     }
