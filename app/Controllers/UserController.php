@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Controllers;
+
+use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\RESTful\ResourceController;
+use App\Models\UserModel;
+
+class UserController extends ResourceController
+{
+    protected $modelName = 'App\Models\UserModel';
+    protected $format    = 'json';
+
+    public function create()
+    {
+        // get json
+        $json = $this->request->getJSON(true);
+        $userModel = new UserModel();
+
+        if ($json) {
+            // check is email used
+            if ($userModel->where('email', $json['email'])->first()) {
+                return $this->respond(['message' => 'Email is taken!'], 400);
+            };
+
+            // check password
+            if (strlen($json['password']) < 5) {
+                return $this->respond(['message' => 'Password must more than 5!'], 400);
+            };
+
+            // hash password
+            $json['password'] = password_hash($json['password'], PASSWORD_BCRYPT);
+
+            // insert data
+            if ($this->model->insert($json)) {
+                return $this->respond(['message' => 'Data inserted successfully!'], 201);
+            } else {
+                // Send failure response
+                return $this->respond(['message' => 'Failed to insert data'], 500);
+            }
+        } else {
+            // Invalid JSON data
+            return $this->respond(['message' => 'Invalid JSON format'], 500);
+        }
+    }
+
+    public function login()
+    {
+        // get json
+        $json = $this->request->getJSON(true);
+        $userModel = new UserModel();
+
+        if ($json) {
+            // check email and password
+            if(!$json['email'] || !$json['password'] ){
+                return $this->respond(['message' => 'Email and password is required!'], 400);
+            };
+
+            // get user
+            $user = $userModel->where('email', $json['email'])->first();
+
+            // check user is valid
+            if (!$user) {
+                return $this->respond(['message' => 'User not found'], 404);
+            };
+
+            // check password
+            if (!password_verify($json['password'], $user['password'])) {
+                return $this->respond(['message' => 'Invalid password'], 400);
+            };
+
+            $access_token = createJWT([
+                'email' => $user['email'],
+                'role' => $user['role']
+            ]);
+
+            return $this->respond(['access_token' => $access_token], 200);
+        } else {
+            // Invalid JSON data
+            return $this->respond(['message' => 'Invalid JSON format'], 500);
+        }
+    }
+
+    public function addUsrProfile(){
+        
+    }
+}
