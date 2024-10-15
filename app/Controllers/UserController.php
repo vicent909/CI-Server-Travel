@@ -135,4 +135,33 @@ class UserController extends ResourceController
             return $this->respond(['message' => 'Invalid JSON format'], 500);
         }
     }
+
+    public function getUserProfile()
+    {
+        $json = $this->request->getJSON(true);
+        $userModel = new UserModel();
+        $profile_model = new UserProfileModel();
+
+        $req_data = $this->request->user_data ?? null;
+
+        if ($json) {
+            // get user
+            $user = $userModel->where('email', $req_data['email'])->first();
+            
+            if (!$user) {
+                return $this->respond(['message' => 'User not found'], 404);
+            }
+
+            // get profile
+            $profile = $profile_model->where('user_id', $user['id'])->first();
+
+            if(!$profile){
+                return $this->respond(['message' => 'Profile not found'], 404);
+            }
+
+            return $this->respond(['data' => $profile], 200);
+        } else {
+            return $this->respond(['message' => 'Invalid JSON format'], 500);
+        }
+    }
 }
