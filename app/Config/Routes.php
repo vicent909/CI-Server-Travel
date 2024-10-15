@@ -14,6 +14,7 @@ $routes->post('/user/login', 'UserController::login');
 // Profile
 $routes->post('/user/profile', 'UserController::addUserProfile');
 $routes->get('/user/profile', 'UserController::getUserProfile');
+$routes->put('/user/profile', 'UserController::editUserProfile');
 
 $routes->get('/travel', 'TravelController::show');
 $routes->get('/travel/(:num)', 'TravelController::getById/$1');
